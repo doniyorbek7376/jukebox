@@ -4,6 +4,7 @@ import io.vertx.core.AbstractVerticle
 import io.vertx.core.eventbus.Message
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.impl.logging.LoggerFactory
+import io.vertx.core.json.JsonObject
 import java.util.*
 
 class JukeBox: AbstractVerticle() {
@@ -14,10 +15,10 @@ class JukeBox: AbstractVerticle() {
 
   override fun start() {
     val eventBus = vertx.eventBus()
-    eventBus.consumer<Any>("jukebox.list", this::list)
-    eventBus.consumer<Any>("jukebox.schedule", this::schedule)
-    eventBus.consumer<Any>("jukebox.play", this::play)
-    eventBus.consumer<Any>("jukebox.pause", this::pause)
+    eventBus.consumer("jukebox.list", this::list)
+    eventBus.consumer("jukebox.schedule", this::schedule)
+    eventBus.consumer("jukebox.play", this::play)
+    eventBus.consumer("jukebox.pause", this::pause)
     vertx.createHttpServer()
       .requestHandler(this::httpHandler)
       .listen(8080)
@@ -27,14 +28,19 @@ class JukeBox: AbstractVerticle() {
   private fun list(request: Message<Any>) {
     TODO("Implement")
   }
-  private fun schedule(request: Message<Any>) {
-    TODO("Implement")
+  private fun schedule(request: Message<JsonObject>) {
+    val fileName = request.body().getString("file")
+    if(playlist.isEmpty() && currentState == State.PAUSED) {
+      currentState = State.PLAYING
+    }
+    playlist.offer(fileName)
   }
   private fun play(request: Message<Any>) {
-    TODO("Implement")
+    currentState = State.PLAYING
   }
+
   private fun pause(request: Message<Any>) {
-    TODO("Implement")
+    currentState = State.PAUSED
   }
   private fun httpHandler(request: HttpServerRequest) {
     TODO("Implement")

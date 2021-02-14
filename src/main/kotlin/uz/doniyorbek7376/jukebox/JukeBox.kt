@@ -4,13 +4,17 @@ import io.vertx.core.AbstractVerticle
 import io.vertx.core.eventbus.Message
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.impl.logging.LoggerFactory
+import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
+import java.io.File
 import java.util.*
+import java.util.stream.Collectors
 
-class JukeBox: AbstractVerticle() {
-  private enum class State {PLAYING, PAUSED}
-  private var currentState:State = State.PAUSED
-  private val playlist:Queue<String> = ArrayDeque()
+class JukeBox : AbstractVerticle() {
+  private enum class State { PLAYING, PAUSED }
+
+  private var currentState: State = State.PAUSED
+  private val playlist: Queue<String> = ArrayDeque()
   private val logger = LoggerFactory.getLogger(JukeBox::class.java)
 
   override fun start() {
@@ -26,15 +30,32 @@ class JukeBox: AbstractVerticle() {
   }
 
   private fun list(request: Message<Any>) {
-    TODO("Implement")
+    vertx.fileSystem().readDir("tracks", ".*mp3$") {
+      if (it.succeeded()) {
+        val files = it.result()
+          .stream()
+          .map { name: String ->
+            File(name)
+          }
+          .map(File::getName)
+          .collect(Collectors.toList())
+        val json: JsonObject = JsonObject().put("files", JsonArray(files))
+        request.reply(json)
+      } else {
+        logger.error("readDir failed", it.cause())
+        request.fail(500, it.cause().message)
+      }
+    }
   }
+
   private fun schedule(request: Message<JsonObject>) {
     val fileName = request.body().getString("file")
-    if(playlist.isEmpty() && currentState == State.PAUSED) {
+    if (playlist.isEmpty() && currentState == State.PAUSED) {
       currentState = State.PLAYING
     }
     playlist.offer(fileName)
   }
+
   private fun play(request: Message<Any>) {
     currentState = State.PLAYING
   }
@@ -42,10 +63,12 @@ class JukeBox: AbstractVerticle() {
   private fun pause(request: Message<Any>) {
     currentState = State.PAUSED
   }
+
   private fun httpHandler(request: HttpServerRequest) {
     TODO("Implement")
   }
-  private fun streamAudioChunk(id:Long) {
+
+  private fun streamAudioChunk(id: Long) {
     TODO("Implement")
   }
 }

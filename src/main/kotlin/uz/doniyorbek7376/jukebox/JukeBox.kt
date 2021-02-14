@@ -3,12 +3,14 @@ package uz.doniyorbek7376.jukebox
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.eventbus.Message
 import io.vertx.core.http.HttpServerRequest
+import io.vertx.core.http.HttpServerResponse
 import io.vertx.core.impl.logging.LoggerFactory
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import java.io.File
 import java.util.*
 import java.util.stream.Collectors
+import kotlin.collections.HashSet
 
 class JukeBox : AbstractVerticle() {
   private enum class State { PLAYING, PAUSED }
@@ -16,6 +18,7 @@ class JukeBox : AbstractVerticle() {
   private var currentState: State = State.PAUSED
   private val playlist: Queue<String> = ArrayDeque()
   private val logger = LoggerFactory.getLogger(JukeBox::class.java)
+  private val streamers:MutableSet<HttpServerResponse> = HashSet()
 
   override fun start() {
     val eventBus = vertx.eventBus()
@@ -83,7 +86,15 @@ class JukeBox : AbstractVerticle() {
     TODO("Implement")
   }
   private fun openAudioStream(request: HttpServerRequest) {
-    TODO("implement")
+    val response = request.response()
+    response
+      .setChunked(true)
+      .putHeader("Content-Type", "audio/mpeg")
+    streamers.add(response)
+    response.endHandler {
+      streamers.remove(response)
+      logger.info("A streamer left")
+    }
   }
   private fun download(fileName:String, request: HttpServerRequest){
     TODO("implement")

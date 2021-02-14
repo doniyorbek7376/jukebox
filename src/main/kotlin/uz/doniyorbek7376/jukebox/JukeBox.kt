@@ -120,6 +120,7 @@ class JukeBox : AbstractVerticle() {
     val response = request.response()
     response.setStatusCode(200)
       .putHeader("Content-Type", "audio/mpeg").isChunked = true
+    /*
     file.handler {
       response.write(it)
       // back pressure: pause file reading when response write queue is full
@@ -130,5 +131,8 @@ class JukeBox : AbstractVerticle() {
         }
       }
     }
+    */
+    // another way:
+    file.pipeTo(response)
   }
 }

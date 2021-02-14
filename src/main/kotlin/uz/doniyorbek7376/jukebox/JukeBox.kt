@@ -2,6 +2,8 @@ package uz.doniyorbek7376.jukebox
 
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.eventbus.Message
+import io.vertx.core.file.AsyncFile
+import io.vertx.core.file.OpenOptions
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.HttpServerResponse
 import io.vertx.core.impl.logging.LoggerFactory
@@ -97,6 +99,36 @@ class JukeBox : AbstractVerticle() {
     }
   }
   private fun download(fileName:String, request: HttpServerRequest){
-    TODO("implement")
+    val file = "tracks/$fileName"
+    if(!vertx.fileSystem().existsBlocking(file)) {
+      request.response().setStatusCode(404).end()
+      return
+    }
+    val opts = OpenOptions().setRead(true)
+    vertx.fileSystem().open(file, opts) {
+      if(it.succeeded()) {
+        downloadFile(it.result(), request)
+      }
+      else {
+        logger.error("Error reading file", it.cause())
+        request.response().setStatusCode(500).end()
+      }
+    }
+  }
+
+  private fun downloadFile(file:AsyncFile,request: HttpServerRequest) {
+    val response = request.response()
+    response.setStatusCode(200)
+      .putHeader("Content-Type", "audio/mpeg").isChunked = true
+    file.handler {
+      response.write(it)
+      // back pressure: pause file reading when response write queue is full
+      if(response.writeQueueFull()) {
+        file.pause()
+        response.drainHandler {
+          file.resume()
+        }
+      }
+    }
   }
 }

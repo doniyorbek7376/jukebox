@@ -57,18 +57,35 @@ class JukeBox : AbstractVerticle() {
   }
 
   private fun play(request: Message<Any>) {
+    logger.trace("play: $request")
     currentState = State.PLAYING
   }
 
   private fun pause(request: Message<Any>) {
+    logger.trace("pause: $request")
     currentState = State.PAUSED
   }
 
   private fun httpHandler(request: HttpServerRequest) {
-    TODO("Implement")
+    if("/" == request.path()) {
+      openAudioStream(request)
+      return
+    }
+    if(request.path().startsWith("/download/")) {
+      val sanitizedPath = request.path().substring(10).replace("/", "")
+      download(sanitizedPath, request)
+      return
+    }
+    request.response().setStatusCode(404).end()
   }
 
   private fun streamAudioChunk(id: Long) {
     TODO("Implement")
+  }
+  private fun openAudioStream(request: HttpServerRequest) {
+    TODO("implement")
+  }
+  private fun download(fileName:String, request: HttpServerRequest){
+    TODO("implement")
   }
 }

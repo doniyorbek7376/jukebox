@@ -3,6 +3,7 @@ package uz.doniyorbek7376.jukebox
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.impl.logging.LoggerFactory
+import io.vertx.core.json.JsonObject
 import io.vertx.core.net.NetSocket
 import io.vertx.core.parsetools.RecordParser
 
@@ -40,11 +41,22 @@ class NetControl : AbstractVerticle() {
   }
 
   private fun listCommand(socket: NetSocket) {
-    TODO("Implement")
+    vertx.eventBus().request<JsonObject>("jukebox.list", "") {
+      if(it.succeeded()) {
+        val files = it.result().body().getJsonArray("files")
+        files.stream().forEach { file ->
+          socket.write("$file\n")
+        }
+      }
+      else {
+        logger.error("Failed to get list of tracks", it.cause())
+      }
+    }
   }
 
   private fun schedule(command: String) {
-    TODO("implement")
+    val track = command.substring(10)
+    vertx.eventBus().send("jukebox.schedule", JsonObject().put("file", track))
   }
 
 }
